@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 fn main() {
     println!("Hello, world!");
 }
@@ -9,17 +11,21 @@ enum Token<'a> {
     Operator(&'a char)
 }
 
-fn calculate(expression: String) -> usize {
-    let tokens = tokenize(expression);
-    let value = interpret(tokens);
+struct Expression<'a> {
+    first_operand: Token<'a>, 
+    operator: Token<'a>,
+    second_operand: Token<'a>
+}
+
+fn calculate(input: String) -> usize {
+    let expression = tokenize(input);
+    let value = interpret(expression);
     value
 }
 
-// Maybe make tokenize return an expression struct which will have named fields, making it easier
-// to return something that can be interpreted.
-fn tokenize<'a>(expression: String) -> (Token<'a>, Token<'a>, Token<'a>) {
-    let mut characters = expression.chars().peekable();
-    let tokens: Vec<Token> = vec![];
+fn tokenize<'a>(input: String) -> Expression<'a> {
+    let mut characters = input.chars().peekable();
+    let mut tokens = Vec::new();
 
     while let Some(_) = characters.peek() {
         match characters.peek() {
@@ -29,12 +35,26 @@ fn tokenize<'a>(expression: String) -> (Token<'a>, Token<'a>, Token<'a>) {
         }
     }
 
-    (Token::Number(5), Token::Operator(&PLUS), Token::Number(3))
+    // Build expression from tokens using pattern matching
+    Expression(Token::Number(5), Token::Operator(&PLUS), Token::Number(3))
 }
 
-fn interpret(tokens: (Token, Token, Token)) -> usize {
-    match tokens {
-        (Token::Number(first_operand), Token::Operator(&PLUS), Token::Number(second_operand)) => add(first_operand, second_operand),
+fn number_token<'a>(literal: Option<char>) -> Token<'a> {
+    let value = literal.expect("Shomehow this is dead wrong.").to_digit(10).unwrap() as usize;
+    Token::Number(value)
+}
+
+fn operator_token<'a>(literal: Option<char>) -> Token<'a> {
+    if let Some(PLUS) = literal {
+        Token::Operator(&PLUS)
+    } else {
+        panic!("Unkown operator.");
+    }
+}
+
+fn interpret(expression: Expression) -> usize {
+    match expression {
+        Expression(Token::Number(first_operand), Token::Operator(&PLUS), Token::Number(second_operand)) => add(first_operand, second_operand),
         _ => panic!("Expression can't be interpreted.")
     }
 }
