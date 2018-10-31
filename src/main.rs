@@ -1,4 +1,6 @@
 use std::io;
+use std::iter::Peekable;
+use std::str::Chars;
 
 fn main() {
     println!("Rcalc. Enter an expression:\n");
@@ -31,14 +33,29 @@ fn is_invalid(input: &String) -> bool {
 }
 
 fn calculate(expression: &String) -> Result<u32, String> {
-    let mut terms = expression.chars();
-    let first_operand = terms.next().unwrap().to_digit(10).unwrap();
+    let mut terms = expression.chars().peekable();
+
+    let first_operand = number_term(&mut terms).unwrap();
     let operator = terms.next().unwrap();
-    let second_operand = terms.next().unwrap().to_digit(10).unwrap();
+    let second_operand = number_term(&mut terms).unwrap();
 
     match operator {
         '+' => Ok(add(first_operand, second_operand)),
         _ => Err(format!("Unsupported operation: '{}'", operator))
+    }
+}
+
+fn number_term(terms: &mut Peekable<Chars>) -> Option<u32> {
+    let mut digits = String::new();
+
+    while let Some('0'...'9') = terms.peek() {
+        digits.push(terms.next().unwrap());
+    }
+
+    if digits.is_empty() {
+        None
+    } else {
+        Some(digits.parse().unwrap())
     }
 }
 
@@ -64,16 +81,26 @@ fn test_is_invalid() {
     assert!(is_invalid(&whitespace));
 }
 
-#[test]
-fn test_calculate() {
-    let addition1 = "5+3".to_string();
-    let addition2 = "1+2".to_string();
-    let unsupported = "4&3".to_string();
+#[test] 
+fn test_calculate_addition() {
+    let addition = "5+3".to_string();
 
-    assert!(calculate(&addition1).is_ok());
-    assert!(calculate(&unsupported).is_err());
-    assert_eq!(calculate(&addition1).unwrap(), 8, "Addition of 5 + 3");
-    assert_eq!(calculate(&addition2).unwrap(), 3, "Addition of 1 + 2");
+    assert!(calculate(&addition).is_ok());
+    assert_eq!(calculate(&addition).unwrap(), 8, "Addition of 5 + 3");
+}
+
+#[test]
+fn test_calculate_unsupported_operation() {
+    let subtraction = "4-3".to_string();
+
+    assert!(calculate(&subtraction).is_err());
+}
+
+#[test] fn test_calculate_multiple_digits() {
+    let multi_digits = "123+456".to_string();
+
+    assert!(calculate(&multi_digits).is_ok());
+    assert_eq!(calculate(&multi_digits).unwrap(), 579, "Addition of 123 + 456");
 }
 
 
